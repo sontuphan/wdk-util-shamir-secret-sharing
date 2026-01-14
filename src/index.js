@@ -1,8 +1,8 @@
 import {
   split as shamirSplit,
   combine as shamirCombine,
-} from "shamir-secret-sharing";
-import bip39 from "bip39";
+} from 'shamir-secret-sharing'
+import bip39 from 'bip39'
 
 /**
  * Convert a Uint8Array to a hexadecimal string
@@ -11,8 +11,8 @@ import bip39 from "bip39";
  */
 function bytesToHex(bytes) {
   return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 /**
@@ -22,13 +22,13 @@ function bytesToHex(bytes) {
  */
 function hexToBytes(hex) {
   if (hex.length % 2 !== 0) {
-    throw new Error("Invalid hex string: length must be even");
+    throw new Error('Invalid hex string: length must be even')
   }
-  const bytes = new Uint8Array(hex.length / 2);
+  const bytes = new Uint8Array(hex.length / 2)
   for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16)
   }
-  return bytes;
+  return bytes
 }
 
 /**
@@ -37,33 +37,33 @@ function hexToBytes(hex) {
  * @throws {Error} - If the mnemonic format is invalid
  */
 function validateMnemonic(mnemonic) {
-  if (typeof mnemonic !== "string") {
-    throw new Error("Mnemonic must be a string");
+  if (typeof mnemonic !== 'string') {
+    throw new Error('Mnemonic must be a string')
   }
 
-  const trimmed = mnemonic.trim();
+  const trimmed = mnemonic.trim()
   if (trimmed.length === 0) {
-    throw new Error("Mnemonic cannot be empty");
+    throw new Error('Mnemonic cannot be empty')
   }
 
-  const words = trimmed.split(/\s+/);
-  const validWordCounts = [12, 15, 18, 21, 24];
+  const words = trimmed.split(/\s+/)
+  const validWordCounts = [12, 15, 18, 21, 24]
 
   if (!validWordCounts.includes(words.length)) {
     throw new Error(
       `Invalid mnemonic word count: ${
         words.length
-      }. Expected one of: ${validWordCounts.join(", ")}`
-    );
+      }. Expected one of: ${validWordCounts.join(', ')}`,
+    )
   }
 
-  const normalizedMnemonic = words.join(" ");
+  const normalizedMnemonic = words.join(' ')
 
   if (!bip39.validateMnemonic(normalizedMnemonic)) {
-    throw new Error("Mnemonic includes invalid words in the bip39 dictionary");
+    throw new Error('Mnemonic includes invalid words in the bip39 dictionary')
   }
 
-  return normalizedMnemonic;
+  return normalizedMnemonic
 }
 
 /**
@@ -74,36 +74,36 @@ function validateMnemonic(mnemonic) {
  * @throws {Error} - If options are invalid
  */
 function validateSplitOptions(options) {
-  if (!options || typeof options !== "object") {
+  if (!options || typeof options !== 'object') {
     throw new Error(
-      "Options must be an object with shares and threshold properties"
-    );
+      'Options must be an object with shares and threshold properties',
+    )
   }
 
-  const { shares, threshold } = options;
+  const { shares, threshold } = options
 
-  if (typeof shares !== "number" || !Number.isInteger(shares)) {
-    throw new Error("shares must be an integer");
+  if (typeof shares !== 'number' || !Number.isInteger(shares)) {
+    throw new Error('shares must be an integer')
   }
 
-  if (typeof threshold !== "number" || !Number.isInteger(threshold)) {
-    throw new Error("threshold must be an integer");
+  if (typeof threshold !== 'number' || !Number.isInteger(threshold)) {
+    throw new Error('threshold must be an integer')
   }
 
   if (shares < 2) {
-    throw new Error("shares must be at least 2");
+    throw new Error('shares must be at least 2')
   }
 
   if (threshold < 2) {
-    throw new Error("threshold must be at least 2");
+    throw new Error('threshold must be at least 2')
   }
 
   if (threshold > shares) {
-    throw new Error("threshold cannot be greater than shares");
+    throw new Error('threshold cannot be greater than shares')
   }
 
   if (shares > 255) {
-    throw new Error("shares cannot exceed 255");
+    throw new Error('shares cannot exceed 255')
   }
 }
 
@@ -114,20 +114,20 @@ function validateSplitOptions(options) {
  */
 function validateShares(shares) {
   if (!Array.isArray(shares)) {
-    throw new Error("Shares must be an array");
+    throw new Error('Shares must be an array')
   }
 
   if (shares.length < 2) {
-    throw new Error("At least 2 shares are required to reconstruct the secret");
+    throw new Error('At least 2 shares are required to reconstruct the secret')
   }
 
   for (let i = 0; i < shares.length; i++) {
-    if (typeof shares[i] !== "string") {
-      throw new Error(`Share at index ${i} must be a string`);
+    if (typeof shares[i] !== 'string') {
+      throw new Error(`Share at index ${i} must be a string`)
     }
 
     if (!/^[0-9a-fA-F]+$/.test(shares[i])) {
-      throw new Error(`Share at index ${i} is not a valid hex string`);
+      throw new Error(`Share at index ${i} is not a valid hex string`)
     }
   }
 }
@@ -148,22 +148,22 @@ function validateShares(shares) {
  */
 export async function split(mnemonic, options) {
   // Normalize the mnemonic (trim and normalize whitespace)
-  const normalizedMnemonic = validateMnemonic(mnemonic);
+  const normalizedMnemonic = validateMnemonic(mnemonic)
 
-  validateSplitOptions(options);
-  const { shares, threshold } = options;
+  validateSplitOptions(options)
+  const { shares, threshold } = options
 
   // Convert mnemonic to bytes
-  const secretHex = bip39.mnemonicToEntropy(normalizedMnemonic);
-  const secretBytes = hexToBytes(secretHex);
+  const secretHex = bip39.mnemonicToEntropy(normalizedMnemonic)
+  const secretBytes = hexToBytes(secretHex)
 
   // Split the secret using Shamir Secret Sharing
-  const shareArrays = await shamirSplit(secretBytes, shares, threshold);
+  const shareArrays = await shamirSplit(secretBytes, shares, threshold)
 
   // Convert each share to hex string for portability
-  const hexShares = shareArrays.map((share) => bytesToHex(share));
+  const hexShares = shareArrays.map((share) => bytesToHex(share))
 
-  return hexShares;
+  return hexShares
 }
 
 /**
@@ -178,25 +178,25 @@ export async function split(mnemonic, options) {
  * // Returns the original mnemonic string
  */
 export async function combine(shares) {
-  validateShares(shares);
+  validateShares(shares)
 
   // Convert hex strings back to Uint8Arrays
-  const shareArrays = shares.map((share) => hexToBytes(share));
+  const shareArrays = shares.map((share) => hexToBytes(share))
 
   // Reconstruct the secret using Shamir Secret Sharing
-  const secretBytes = await shamirCombine(shareArrays);
+  const secretBytes = await shamirCombine(shareArrays)
 
   // Convert bytes back to string
-  const secretHex = bytesToHex(secretBytes);
-  const mnemonic = bip39.entropyToMnemonic(secretHex);
+  const secretHex = bytesToHex(secretBytes)
+  const mnemonic = bip39.entropyToMnemonic(secretHex)
 
   // Validate the reconstructed mnemonic
-  validateMnemonic(mnemonic);
+  validateMnemonic(mnemonic)
 
-  return mnemonic;
+  return mnemonic
 }
 
 export default {
   split,
   combine,
-};
+}
